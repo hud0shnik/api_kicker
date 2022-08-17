@@ -2,19 +2,26 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type api_response struct {
 	Error string `json:"error"`
 }
 
-func pingApi(url string) bool {
+type status struct {
+	Git string `json:"github_api"`
+	Osu string `json:"osu_api"`
+}
+
+func pingApi(url string) string {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return false
+		return "http.Get error"
 	}
 
 	defer resp.Body.Close()
@@ -22,13 +29,21 @@ func pingApi(url string) bool {
 	var response = new(api_response)
 	json.Unmarshal(body, &response)
 
-	return response.Error == ""
+	if response.Error == "" {
+		return "Ok"
+	}
+	return "Api error"
+
 }
 
 func main() {
 
 	for {
-		pingApi("https://osustatsapi.herokuapp.com/user/hud0shnik")
-		pingApi("https://hud0shnikgitapi.herokuapp.com/user/hud0shnik")
+		fmt.Println("| " + string(time.Now().Format("15:04")) + " check |")
+		fmt.Println("| osu:\t" + pingApi("https://osustatsapi.herokuapp.com/user/hud0shnik") + "    |")
+		fmt.Println("| git:\t" + pingApi("https://hud0shnikgitapi.herokuapp.com/user/hud0shnik") + "    |")
+		fmt.Println("|-------------|")
+
+		time.Sleep(time.Minute * 5)
 	}
 }
