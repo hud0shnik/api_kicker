@@ -56,12 +56,22 @@ func pingApi(url string) string {
 // Функция трекинга апих
 func track_api() {
 
+	fmt.Println("|-------------|")
+
 	// Бесконечный цикл пинков
 	for {
 
-		fmt.Println("| " + string(time.Now().Format("15:04")) + " check |")
-		fmt.Println("| osu:\t" + pingApi("https://osustatsapi.herokuapp.com/user/hud0shnik") + "    |")
-		fmt.Println("| git:\t" + pingApi("https://hud0shnikgitapi.herokuapp.com/user/hud0shnik") + "    |")
+		fmt.Println("| " + string(time.Now().Format("15:04")) + " Check |")
+		if pingApi("https://osustatsapi.herokuapp.com/user/hud0shnik") == "Ok" {
+			fmt.Println("| osu:\t" + "Ok    |")
+		} else {
+			fmt.Println("| osu:\t" + "Err   |")
+		}
+		if pingApi("https://hud0shnikgitapi.herokuapp.com/user/hud0shnik") == "Ok" {
+			fmt.Println("| git:\t" + "Ok    |")
+		} else {
+			fmt.Println("| git:\t" + "Err   |")
+		}
 		fmt.Println("|-------------|")
 
 		time.Sleep(time.Minute * 5)
