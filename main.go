@@ -21,6 +21,7 @@ type status struct {
 	Osu string `json:"osu_api"`
 }
 
+// Функция формирования респонса со статусами
 func check_api() status {
 	return status{
 		Git: pingApi("https://osustatsapi.herokuapp.com/user/hud0shnik"),
@@ -28,18 +29,22 @@ func check_api() status {
 	}
 }
 
+// Функция проверки апи
 func pingApi(url string) string {
 
+	// Реквест к апи
 	resp, err := http.Get(url)
 	if err != nil {
 		return "http.Get error"
 	}
 
+	// Обработка респонса
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 	var response = new(api_response)
 	json.Unmarshal(body, &response)
 
+	// Проверка ошибки
 	if response.Error == "" {
 		return "Ok"
 	}
@@ -48,8 +53,10 @@ func pingApi(url string) string {
 
 }
 
+// Функция трекинга апих
 func track_api() {
 
+	// Бесконечный цикл пинков
 	for {
 
 		fmt.Println("| " + string(time.Now().Format("15:04")) + " check |")
@@ -73,6 +80,7 @@ func sendStatus(writer http.ResponseWriter, request *http.Request) {
 
 func main() {
 
+	// Отслеживает апихи в горутине
 	go func() {
 		track_api()
 	}()
