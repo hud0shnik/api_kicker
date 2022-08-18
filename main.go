@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,7 +11,13 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
 )
+
+type TgMessage struct {
+	ChatId int    `json:"chat_id"`
+	Text   string `json:"text"`
+}
 
 type api_response struct {
 	Error string `json:"error"`
@@ -19,6 +26,14 @@ type api_response struct {
 type status struct {
 	Git string `json:"github_api"`
 	Osu string `json:"osu_api"`
+}
+
+// Функция инициализации конфига (всех токенов)
+func InitConfig() error {
+	viper.AddConfigPath("configs")
+	viper.SetConfigName("config")
+
+	return viper.ReadInConfig()
 }
 
 // Функция формирования респонса со статусами
@@ -45,12 +60,33 @@ func pingApi(url string) string {
 	json.Unmarshal(body, &response)
 
 	// Проверка ошибки
-	if response.Error == "" {
+	if resp.StatusCode == 200 && response.Error == "" {
 		return "Ok"
 	}
 
 	return "Api error"
 
+}
+
+// Отправка сообщения об ошибке мне в тг
+func SendErrorMessage() error {
+
+	// Формирование сообщения
+	buf, err := json.Marshal(TgMessage{
+		ChatId: viper.GetInt("DanyaChatId"),
+		Text:   "Дань, тут одна из апих выдала ошибку, проверь логи",
+	})
+	if err != nil {
+		return err
+	}
+
+	// Отправка сообщения
+	_, err = http.Post("https://api.telegram.org/bot"+viper.GetString("token")+"/sendMessage", "application/json", bytes.NewBuffer(buf))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Функция трекинга апих
@@ -62,16 +98,21 @@ func track_api() {
 	for {
 
 		fmt.Println("| " + string(time.Now().Format("15:04")) + " Check |")
+
 		if pingApi("https://osustatsapi.herokuapp.com/user/hud0shnik") == "Ok" {
 			fmt.Println("| osu:\t" + "Ok    |")
 		} else {
 			fmt.Println("| osu:\t" + "Err   |")
+			SendErrorMessage()
 		}
+
 		if pingApi("https://hud0shnikgitapi.herokuapp.com/user/hud0shnik") == "Ok" {
 			fmt.Println("| git:\t" + "Ok    |")
 		} else {
 			fmt.Println("| git:\t" + "Err   |")
+			SendErrorMessage()
 		}
+
 		fmt.Println("|-------------|")
 
 		time.Sleep(time.Minute * 5)
@@ -89,6 +130,13 @@ func sendStatus(writer http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
+
+	// Инициализация конфига
+	err := InitConfig()
+	if err != nil {
+		fmt.Println("Config error: ", err)
+		return
+	}
 
 	// Отслеживает апихи в горутине
 	go func() {
